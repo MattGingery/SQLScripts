@@ -16,7 +16,7 @@ Security Note: uses dynamic SQL so there is a SQL injection risk.  Do not use on
 
 Usage:
 
--- To generate JSON Example :
+-- To generate JSON Example:
 DECLARE @json NVARCHAR(MAX) = (
     SELECT * FROM master.sys.schemas
     WHERE NAME NOT IN ( 'dbo' , 'guest' , 'sys' , 'INFORMATION_SCHEMA' ) AND NAME NOT LIKE 'db[_]%'
@@ -45,7 +45,7 @@ EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id
         WITH ([name] nvarchar(128),[schema_id] int,[principal_id] int)
     */
 
--- Insert ineo temp table:
+-- Insert into temp table:
 DROP TABLE IF EXISTS #tempSchemas;
 SELECT TOP 0 * INTO #tempSchemas FROM master.sys.schemas ;
 
@@ -84,6 +84,7 @@ BEGIN
         WITH (' + @with_clause + ')';
 		-- double quote " is needed in OPENJSON '$."..."' since there is a dot in the root
 
+	-- 3. If @insert_into_table_name was input, setup insert of the data into that table
 	IF LEN( @insert_into_table_name ) > 0 
       BEGIN
         SET @sql_command = 'INSERT INTO ' + @insert_into_table_name + '( ' + @select_clause + ' ) 
@@ -103,7 +104,7 @@ BEGIN
 
      IF @debug <> 0 PRINT @sql_command ;
 
-    -- 3. Execute with parameters 
+    -- 4. Execute with parameters 
     IF @debug >= 0 EXEC sp_executesql @sql_command, N'@json NVARCHAR(MAX)', @json = @json;
 END;
 
