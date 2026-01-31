@@ -20,12 +20,12 @@ Usage:
 DECLARE @json NVARCHAR(MAX) = (
     SELECT * FROM master.sys.schemas
     WHERE NAME NOT IN ( 'dbo' , 'guest' , 'sys' , 'INFORMATION_SCHEMA' ) AND NAME NOT LIKE 'db[_]%'
-    FOR JSON PATH , ROOT('sys.schemas')
+    FOR JSON PATH , ROOT('schemas')
 ) ;
 PRINT @json ; 
 
 -- Simple Output:    
-EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
+EXEC dbo.GetTableDataFromJSON @json = '{"schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
 ,   @table_name = 'schemas'
 ,   @table_schema = 'sys' ;
     /*
@@ -35,13 +35,13 @@ EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id
     */
 
 -- Debug statement only:
-EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
+EXEC dbo.GetTableDataFromJSON @json = '{"schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
 ,   @table_name = 'schemas'
 ,   @table_schema = 'sys' 
 ,   @debug = -1;
     /*
         SELECT [name],[schema_id],[principal_id]
-        FROM OPENJSON(@json, '$."sys.schemas"') 
+        FROM OPENJSON(@json, '$.schemas') 
         WITH ([name] nvarchar(128),[schema_id] int,[principal_id] int)
     */
 
@@ -49,7 +49,7 @@ EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id
 DROP TABLE IF EXISTS #tempSchemas;
 SELECT TOP 0 * INTO #tempSchemas FROM master.sys.schemas ;
 
-EXEC dbo.GetTableDataFromJSON @json = '{"sys.schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
+EXEC dbo.GetTableDataFromJSON @json = '{"schemas":[{"name":"test","schema_id":8,"principal_id":8},{"name":"temp","schema_id":9,"principal_id":9}]}'
 ,   @table_name = 'schemas'
 ,   @table_schema = 'sys' 
 ,   @insert_into_table_name = '#tempSchemas';
@@ -80,9 +80,8 @@ BEGIN
     -- 2. Construct the final dynamic SELECT statement
     SET @sql_command = N'
         SELECT ' + @select_clause + '
-        FROM OPENJSON(@json, ''$."' + @table_schema + '.' + @table_name +  '"'') 
-        WITH (' + @with_clause + ')';
-		-- double quote " is needed in OPENJSON '$."..."' since there is a dot in the root
+        FROM OPENJSON(@json, ''$.' + @table_name +  ''') 
+        WITH (' + @with_clause + ')';		
 
 	-- 3. If @insert_into_table_name was input, setup insert of the data into that table
 	IF LEN( @insert_into_table_name ) > 0 
